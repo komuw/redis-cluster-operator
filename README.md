@@ -1,5 +1,11 @@
 # redis-cluster-operator
 
+Run:
+```sh
+make build-go && make build-image
+```
+
+
 ## Overview
 
 Redis Cluster Operator manages [Redis Cluster](https://redis.io/topics/cluster-spec) atop Kubernetes.
