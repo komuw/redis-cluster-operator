@@ -367,7 +367,18 @@ func (r *ReconcileDistributedRedisCluster) Reconcile(request reconcile.Request) 
 	newStatus := buildClusterStatus(newClusterInfos, ctx.pods, instance, reqLogger)
 	SetClusterOK(newStatus, "OK")
 	r.updateClusterIfNeed(instance, newStatus, reqLogger)
-	return reconcile.Result{RequeueAfter: time.Duration(reconcileTime) * time.Second}, nil
+
+	reconResult = reconcile.Result{RequeueAfter: time.Duration(reconcileTime) * time.Second}
+	err = nil
+	reqLogger.WithValues(
+		"the_event", "komu_at_the_end",
+		"reconResult", reconResult,
+		"err", err,
+		"ctx.pods", ctx.pods,
+		"newStatus", newStatus,
+	).Info("komu_at_the_end")
+
+	return reconResult, err
 }
 
 func (r *ReconcileDistributedRedisCluster) isScalingDown(cluster *redisv1alpha1.DistributedRedisCluster, reqLogger logr.Logger) bool {
