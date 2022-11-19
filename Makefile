@@ -21,9 +21,7 @@ build-go:
 	GO111MODULE=on CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
 	-ldflags "-X github.com/$(REPO)/version.Version=$(VERSION) -X github.com/$(REPO)/version.GitSHA=$(GIT_SHA)" \
 	-o $(BIN_DIR)/$(PROJECT_NAME)-linux-amd64 cmd/manager/main.go
-	GO111MODULE=on CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build \
-	-ldflags "-X github.com/$(REPO)/version.Version=$(VERSION) -X github.com/$(REPO)/version.GitSHA=$(GIT_SHA)" \
-	-o $(BIN_DIR)/$(PROJECT_NAME)-darwin-amd64 cmd/manager/main.go
+
 
 build-image:
 	docker build --build-arg VERSION=$(VERSION) --build-arg GIT_SHA=$(GIT_SHA) -t $(ALTREPO):$(VERSION) .
