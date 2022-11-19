@@ -2,6 +2,7 @@ package distributedrediscluster
 
 import (
 	"context"
+	"runtime/debug"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -171,10 +172,12 @@ func (r *ReconcileDistributedRedisCluster) Reconcile(request reconcile.Request) 
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 
 	defer func() {
+		stack := debug.Stack()
 		reqLogger.WithValues(
 			"the_event", "komu",
 			"err", err,
 			"reconResult", reconResult,
+			"stack", string(stack),
 		).Info("Reconcile_end")
 	}()
 

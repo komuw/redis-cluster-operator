@@ -4,6 +4,8 @@ PROJECT_NAME=redis-cluster-operator
 REPO=ucloud/$(PROJECT_NAME)
 
 DOCKER_REGISTRY=komuw
+LATEST_COMMIT=$(shell git log -n 1 --pretty=format:%h)
+
 # replace with your public registry
 ALTREPO=$(DOCKER_REGISTRY)/$(PROJECT_NAME)
 E2EALTREPO=$(DOCKER_REGISTRY)/$(PROJECT_NAME)-e2e
@@ -24,8 +26,7 @@ build-go:
 
 
 build-image:
-	docker build --build-arg VERSION=$(VERSION) --build-arg GIT_SHA=$(GIT_SHA) -t $(ALTREPO):$(VERSION) .
-	docker tag $(ALTREPO):$(VERSION) $(ALTREPO):latest
+	docker build --build-arg VERSION=$(VERSION) --build-arg GIT_SHA=$(GIT_SHA) -t $(ALTREPO):$(LATEST_COMMIT) .
 	docker push --all-tags $(ALTREPO)
 
 build-e2e:
