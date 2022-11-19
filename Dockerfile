@@ -10,14 +10,11 @@ ARG BUILD_PATH=${REPO_PATH}/cmd/manager
 WORKDIR /src
 
 COPY go.mod go.sum ./
-RUN --mount=type=cache,id=gomod,target=/go/pkg/mod go mod download
-
+RUN go mod download
 
 COPY pkg ./ cmd ./ version ./
 
-RUN --mount=type=cache,id=gomod,target=/go/pkg/mod \
-    --mount=type=cache,id=gobuild,target=/root/.cache/go-build \
-    GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ${GOBIN}/${PROJECT_NAME} $BUILD_PATH
+RUN GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ${GOBIN}/${PROJECT_NAME} $BUILD_PATH
 
 # =============================================================================
 FROM alpine:3.9 AS final
