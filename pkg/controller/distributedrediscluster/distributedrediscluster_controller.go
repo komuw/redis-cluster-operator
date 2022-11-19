@@ -177,7 +177,7 @@ func (r *ReconcileDistributedRedisCluster) Reconcile(request reconcile.Request) 
 			"the_event", "komu",
 			"err", err,
 			"reconResult", reconResult,
-			"stack", string(stack),
+			"stackT", string(stack),
 		).Info("Reconcile_end")
 	}()
 
