@@ -3,6 +3,7 @@ SHELL=/bin/bash -o pipefail
 PROJECT_NAME=redis-cluster-operator
 REPO=ucloud/$(PROJECT_NAME)
 
+DOCKER_REGISTRY=komuw
 # replace with your public registry
 ALTREPO=$(DOCKER_REGISTRY)/$(PROJECT_NAME)
 E2EALTREPO=$(DOCKER_REGISTRY)/$(PROJECT_NAME)-e2e

@@ -167,13 +167,24 @@ type ReconcileDistributedRedisCluster struct {
 // Note:
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
-func (r *ReconcileDistributedRedisCluster) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+func (r *ReconcileDistributedRedisCluster) Reconcile(request reconcile.Request) (reconResult reconcile.Result, err error) {
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
+
+	defer func() {
+		reqLogger.WithValues(
+			"the_event", "komu",
+			"err", err,
+			"reconResult", reconResult,
+		).Info("Reconcile_end")
+	}()
+
 	reqLogger.Info("Reconciling DistributedRedisCluster")
+
+	// komuw, here.
 
 	// Fetch the DistributedRedisCluster instance
 	instance := &redisv1alpha1.DistributedRedisCluster{}
-	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
+	err = r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return reconcile.Result{}, nil
@@ -186,19 +197,19 @@ func (r *ReconcileDistributedRedisCluster) Reconcile(request reconcile.Request) 
 		reqLogger: reqLogger,
 	}
 
-	err = r.ensureCluster(ctx)
-	if err != nil {
-		switch GetType(err) {
-		case StopRetry:
-			reqLogger.Info("invalid", "err", err)
-			return reconcile.Result{}, nil
-		}
-		reqLogger.WithValues("err", err).Info("ensureCluster")
-		newStatus := instance.Status.DeepCopy()
-		SetClusterScaling(newStatus, err.Error())
-		r.updateClusterIfNeed(instance, newStatus, reqLogger)
-		return reconcile.Result{RequeueAfter: requeueAfter}, nil
-	}
+	// err = r.ensureCluster(ctx)
+	// if err != nil {
+	// 	switch GetType(err) {
+	// 	case StopRetry:
+	// 		reqLogger.Info("invalid", "err", err)
+	// 		return reconcile.Result{}, nil
+	// 	}
+	// 	reqLogger.WithValues("err", err).Info("ensureCluster")
+	// 	newStatus := instance.Status.DeepCopy()
+	// 	SetClusterScaling(newStatus, err.Error())
+	// 	r.updateClusterIfNeed(instance, newStatus, reqLogger)
+	// 	return reconcile.Result{RequeueAfter: requeueAfter}, nil
+	// }
 
 	matchLabels := getLabels(instance)
 	redisClusterPods, err := r.statefulSetController.GetStatefulSetPodsByLabels(instance.Namespace, matchLabels)
