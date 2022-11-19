@@ -174,11 +174,11 @@ func (r *ReconcileDistributedRedisCluster) Reconcile(request reconcile.Request) 
 	defer func() {
 		stack := debug.Stack()
 		reqLogger.WithValues(
-			"the_event", "komu",
+			"the_event", "komu_Reconcile_end",
 			"err", err,
 			"reconResult", reconResult,
 			"stackT", string(stack),
-		).Info("Reconcile_end")
+		).Info("komu_Reconcile_end")
 	}()
 
 	reqLogger.Info("Reconciling DistributedRedisCluster")
@@ -200,6 +200,8 @@ func (r *ReconcileDistributedRedisCluster) Reconcile(request reconcile.Request) 
 		reqLogger: reqLogger,
 	}
 
+	// TODO: (komuw), re-enable this?
+	//
 	// err = r.ensureCluster(ctx)
 	// if err != nil {
 	// 	switch GetType(err) {
@@ -228,6 +230,9 @@ func (r *ReconcileDistributedRedisCluster) Reconcile(request reconcile.Request) 
 		Pods:       ctx.pods,
 		DryRun:     false,
 	})
+
+	// TODO: (komuw), re-enable this?
+	//
 	// err = r.waitPodReady(ctx)
 	// if err != nil {
 	// 	switch GetType(err) {
@@ -339,10 +344,17 @@ func (r *ReconcileDistributedRedisCluster) Reconcile(request reconcile.Request) 
 		reqLogger.Info(">>>>>> clustering")
 		err = r.syncCluster(ctx)
 		if err != nil {
-			newStatus := instance.Status.DeepCopy()
-			SetClusterFailed(newStatus, err.Error())
-			r.updateClusterIfNeed(instance, newStatus, reqLogger)
-			return reconcile.Result{}, err
+			reqLogger.WithValues(
+				"the_event", "komu_syncCluster_error",
+				"err", err,
+			).Info("komu_syncCluster_error")
+
+			// TODO: (komuw), re-enable this?
+			//
+			// newStatus := instance.Status.DeepCopy()
+			// SetClusterFailed(newStatus, err.Error())
+			// r.updateClusterIfNeed(instance, newStatus, reqLogger)
+			// return reconcile.Result{}, err
 		}
 	}
 
