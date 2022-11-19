@@ -26,6 +26,7 @@ build-go:
 build-image:
 	docker build --build-arg VERSION=$(VERSION) --build-arg GIT_SHA=$(GIT_SHA) -t $(ALTREPO):$(VERSION) .
 	docker tag $(ALTREPO):$(VERSION) $(ALTREPO):latest
+	docker push $(ALTREPO)
 
 build-e2e:
 	docker build -t $(E2EALTREPO):$(VERSION)  -f test/e2e/Dockerfile .

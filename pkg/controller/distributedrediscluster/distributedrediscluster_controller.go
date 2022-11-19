@@ -225,18 +225,18 @@ func (r *ReconcileDistributedRedisCluster) Reconcile(request reconcile.Request) 
 		Pods:       ctx.pods,
 		DryRun:     false,
 	})
-	err = r.waitPodReady(ctx)
-	if err != nil {
-		switch GetType(err) {
-		case Kubernetes:
-			return reconcile.Result{}, err
-		}
-		reqLogger.WithValues("err", err).Info("waitPodReady")
-		newStatus := instance.Status.DeepCopy()
-		SetClusterScaling(newStatus, err.Error())
-		r.updateClusterIfNeed(instance, newStatus, reqLogger)
-		return reconcile.Result{RequeueAfter: requeueAfter}, nil
-	}
+	// err = r.waitPodReady(ctx)
+	// if err != nil {
+	// 	switch GetType(err) {
+	// 	case Kubernetes:
+	// 		return reconcile.Result{}, err
+	// 	}
+	// 	reqLogger.WithValues("err", err).Info("waitPodReady")
+	// 	newStatus := instance.Status.DeepCopy()
+	// 	SetClusterScaling(newStatus, err.Error())
+	// 	r.updateClusterIfNeed(instance, newStatus, reqLogger)
+	// 	return reconcile.Result{RequeueAfter: requeueAfter}, nil
+	// }
 
 	password, err := statefulsets.GetClusterPassword(r.client, instance)
 	if err != nil {
