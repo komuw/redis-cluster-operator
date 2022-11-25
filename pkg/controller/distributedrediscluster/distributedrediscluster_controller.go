@@ -2,6 +2,7 @@ package distributedrediscluster
 
 import (
 	"context"
+	"runtime/debug"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -167,13 +168,26 @@ type ReconcileDistributedRedisCluster struct {
 // Note:
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
-func (r *ReconcileDistributedRedisCluster) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+func (r *ReconcileDistributedRedisCluster) Reconcile(request reconcile.Request) (reconResult reconcile.Result, err error) {
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
+
+	defer func() {
+		stack := debug.Stack()
+		reqLogger.WithValues(
+			"the_event", "komu_Reconcile_end",
+			"err", err,
+			"reconResult", reconResult,
+			"stackT", string(stack),
+		).Info("komu_Reconcile_end")
+	}()
+
 	reqLogger.Info("Reconciling DistributedRedisCluster")
+
+	// komuw, here.
 
 	// Fetch the DistributedRedisCluster instance
 	instance := &redisv1alpha1.DistributedRedisCluster{}
-	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
+	err = r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return reconcile.Result{}, nil
@@ -186,19 +200,21 @@ func (r *ReconcileDistributedRedisCluster) Reconcile(request reconcile.Request) 
 		reqLogger: reqLogger,
 	}
 
-	err = r.ensureCluster(ctx)
-	if err != nil {
-		switch GetType(err) {
-		case StopRetry:
-			reqLogger.Info("invalid", "err", err)
-			return reconcile.Result{}, nil
-		}
-		reqLogger.WithValues("err", err).Info("ensureCluster")
-		newStatus := instance.Status.DeepCopy()
-		SetClusterScaling(newStatus, err.Error())
-		r.updateClusterIfNeed(instance, newStatus, reqLogger)
-		return reconcile.Result{RequeueAfter: requeueAfter}, nil
-	}
+	// TODO: (komuw), re-enable this?
+	//
+	// err = r.ensureCluster(ctx)
+	// if err != nil {
+	// 	switch GetType(err) {
+	// 	case StopRetry:
+	// 		reqLogger.Info("invalid", "err", err)
+	// 		return reconcile.Result{}, nil
+	// 	}
+	// 	reqLogger.WithValues("err", err).Info("ensureCluster")
+	// 	newStatus := instance.Status.DeepCopy()
+	// 	SetClusterScaling(newStatus, err.Error())
+	// 	r.updateClusterIfNeed(instance, newStatus, reqLogger)
+	// 	return reconcile.Result{RequeueAfter: requeueAfter}, nil
+	// }
 
 	matchLabels := getLabels(instance)
 	redisClusterPods, err := r.statefulSetController.GetStatefulSetPodsByLabels(instance.Namespace, matchLabels)
@@ -214,18 +230,21 @@ func (r *ReconcileDistributedRedisCluster) Reconcile(request reconcile.Request) 
 		Pods:       ctx.pods,
 		DryRun:     false,
 	})
-	err = r.waitPodReady(ctx)
-	if err != nil {
-		switch GetType(err) {
-		case Kubernetes:
-			return reconcile.Result{}, err
-		}
-		reqLogger.WithValues("err", err).Info("waitPodReady")
-		newStatus := instance.Status.DeepCopy()
-		SetClusterScaling(newStatus, err.Error())
-		r.updateClusterIfNeed(instance, newStatus, reqLogger)
-		return reconcile.Result{RequeueAfter: requeueAfter}, nil
-	}
+
+	// TODO: (komuw), re-enable this?
+	//
+	// err = r.waitPodReady(ctx)
+	// if err != nil {
+	// 	switch GetType(err) {
+	// 	case Kubernetes:
+	// 		return reconcile.Result{}, err
+	// 	}
+	// 	reqLogger.WithValues("err", err).Info("waitPodReady")
+	// 	newStatus := instance.Status.DeepCopy()
+	// 	SetClusterScaling(newStatus, err.Error())
+	// 	r.updateClusterIfNeed(instance, newStatus, reqLogger)
+	// 	return reconcile.Result{RequeueAfter: requeueAfter}, nil
+	// }
 
 	password, err := statefulsets.GetClusterPassword(r.client, instance)
 	if err != nil {
@@ -325,10 +344,17 @@ func (r *ReconcileDistributedRedisCluster) Reconcile(request reconcile.Request) 
 		reqLogger.Info(">>>>>> clustering")
 		err = r.syncCluster(ctx)
 		if err != nil {
-			newStatus := instance.Status.DeepCopy()
-			SetClusterFailed(newStatus, err.Error())
-			r.updateClusterIfNeed(instance, newStatus, reqLogger)
-			return reconcile.Result{}, err
+			reqLogger.WithValues(
+				"the_event", "komu_syncCluster_error",
+				"err", err,
+			).Info("komu_syncCluster_error")
+
+			// TODO: (komuw), re-enable this?
+			//
+			// newStatus := instance.Status.DeepCopy()
+			// SetClusterFailed(newStatus, err.Error())
+			// r.updateClusterIfNeed(instance, newStatus, reqLogger)
+			// return reconcile.Result{}, err
 		}
 	}
 
@@ -341,7 +367,18 @@ func (r *ReconcileDistributedRedisCluster) Reconcile(request reconcile.Request) 
 	newStatus := buildClusterStatus(newClusterInfos, ctx.pods, instance, reqLogger)
 	SetClusterOK(newStatus, "OK")
 	r.updateClusterIfNeed(instance, newStatus, reqLogger)
-	return reconcile.Result{RequeueAfter: time.Duration(reconcileTime) * time.Second}, nil
+
+	reconResult = reconcile.Result{RequeueAfter: time.Duration(reconcileTime) * time.Second}
+	err = nil
+	reqLogger.WithValues(
+		"the_event", "komu_at_the_end",
+		"reconResult", reconResult,
+		"err", err,
+		"ctx.pods", ctx.pods,
+		"newStatus", newStatus,
+	).Info("komu_at_the_end")
+
+	return reconResult, err
 }
 
 func (r *ReconcileDistributedRedisCluster) isScalingDown(cluster *redisv1alpha1.DistributedRedisCluster, reqLogger logr.Logger) bool {

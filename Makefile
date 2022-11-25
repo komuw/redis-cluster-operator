@@ -3,6 +3,9 @@ SHELL=/bin/bash -o pipefail
 PROJECT_NAME=redis-cluster-operator
 REPO=ucloud/$(PROJECT_NAME)
 
+DOCKER_REGISTRY=komuw
+LATEST_COMMIT=$(shell git log -n 1 --pretty=format:%h)
+
 # replace with your public registry
 ALTREPO=$(DOCKER_REGISTRY)/$(PROJECT_NAME)
 E2EALTREPO=$(DOCKER_REGISTRY)/$(PROJECT_NAME)-e2e
@@ -20,13 +23,10 @@ build-go:
 	GO111MODULE=on CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
 	-ldflags "-X github.com/$(REPO)/version.Version=$(VERSION) -X github.com/$(REPO)/version.GitSHA=$(GIT_SHA)" \
 	-o $(BIN_DIR)/$(PROJECT_NAME)-linux-amd64 cmd/manager/main.go
-	GO111MODULE=on CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build \
-	-ldflags "-X github.com/$(REPO)/version.Version=$(VERSION) -X github.com/$(REPO)/version.GitSHA=$(GIT_SHA)" \
-	-o $(BIN_DIR)/$(PROJECT_NAME)-darwin-amd64 cmd/manager/main.go
 
 build-image:
-	docker build --build-arg VERSION=$(VERSION) --build-arg GIT_SHA=$(GIT_SHA) -t $(ALTREPO):$(VERSION) .
-	docker tag $(ALTREPO):$(VERSION) $(ALTREPO):latest
+	docker build --build-arg VERSION=$(VERSION) --build-arg GIT_SHA=$(GIT_SHA) -t $(ALTREPO):$(LATEST_COMMIT) .
+	docker push --all-tags $(ALTREPO)
 
 build-e2e:
 	docker build -t $(E2EALTREPO):$(VERSION)  -f test/e2e/Dockerfile .

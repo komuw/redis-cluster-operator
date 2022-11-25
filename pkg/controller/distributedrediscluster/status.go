@@ -121,15 +121,30 @@ func buildClusterStatus(clusterInfos *redisutil.ClusterInfos, pods []*corev1.Pod
 	return status
 }
 
-func (r *ReconcileDistributedRedisCluster) updateClusterIfNeed(cluster *redisv1alpha1.DistributedRedisCluster,
+func (r *ReconcileDistributedRedisCluster) updateClusterIfNeed(
+	cluster *redisv1alpha1.DistributedRedisCluster,
 	newStatus *redisv1alpha1.DistributedRedisClusterStatus,
-	reqLogger logr.Logger) {
-	if compareStatus(&cluster.Status, newStatus, reqLogger) {
-		reqLogger.WithValues("namespace", cluster.Namespace, "name", cluster.Name).
-			V(3).Info("status changed")
-		cluster.Status = *newStatus
-		r.crController.UpdateCRStatus(cluster)
-	}
+	reqLogger logr.Logger,
+) {
+	// TODO: (komuw), re-enable this?
+	//
+	// if compareStatus(&cluster.Status, newStatus, reqLogger) {
+	// 	reqLogger.WithValues("namespace", cluster.Namespace, "name", cluster.Name).
+	// 		V(3).Info("status changed")
+	// 	cluster.Status = *newStatus
+	// 	r.crController.UpdateCRStatus(cluster)
+	// }
+
+	reqLogger.WithValues("namespace", cluster.Namespace, "name", cluster.Name).V(3).Info("status changed")
+	cluster.Status = *newStatus
+	r.crController.UpdateCRStatus(cluster)
+
+	reqLogger.WithValues(
+		"the_event", "komu_updateClusterIfNeed",
+		"namespace", cluster.Namespace,
+		"name", cluster.Name,
+		"cluster.Status", cluster.Status,
+	).Info("komu_updateClusterIfNeed")
 }
 
 func compareStatus(old, new *redisv1alpha1.DistributedRedisClusterStatus, reqLogger logr.Logger) bool {
